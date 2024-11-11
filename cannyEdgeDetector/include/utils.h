@@ -1,8 +1,26 @@
 #pragma once
 
-#include <string>
+#include <filesystem>
 
-struct ArgumentList {
-  std::string image_name;  //!< image file name
-  int wait_t;              //!< waiting time
-};
+void maxPooling(const cv::Mat& image, int size, int stride, cv::Mat& out);
+
+void averagePooling(const cv::Mat& image, int size, int stride, cv::Mat& out);
+
+void convFloat(const cv::Mat& image, const cv::Mat& kernel, cv::Mat& out,
+               int stride = 1);
+
+void convInt(const cv::Mat& image, const cv::Mat& kernel, cv::Mat& out,
+             int stride = 1);
+
+void gaussianKernel(float sigma, int radius, cv::Mat& kernel);
+
+void sobel(const cv::Mat& image, cv::Mat& magnitude, cv::Mat& orientation);
+
+float bilinear(const cv::Mat& image, float r, float c);
+
+int findPeaks(const cv::Mat& magnitude, const cv::Mat& orientation,
+              cv::Mat& out, float th0);
+
+int doubleTh(const cv::Mat& magnitude, cv::Mat& out, float th1, float th2);
+
+int canny(const cv::Mat& image, cv::Mat& out, float th0, float th1, float th2);

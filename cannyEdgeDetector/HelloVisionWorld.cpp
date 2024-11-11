@@ -19,6 +19,8 @@
 // nell'es 9) viene applicato su una CV_32F quindi ho fatto i due casi
 
 #include <iostream>
+#include <filesystem>
+#include <cstdlib>
 #include <opencv2/opencv.hpp>
 
 #include "src/utils.cpp"
@@ -28,52 +30,7 @@ using namespace cv;
 using namespace std;
 
 
-bool ParseInputs(ArgumentList& args, int argc, char** argv) {
-  if (argc < 3 || (argc == 2 && string(argv[1]) == "--help") ||
-      (argc == 2 && string(argv[1]) == "-h") ||
-      (argc == 2 && string(argv[1]) == "-help")) {
-    cout << "usage: simple -i <image_name>" << endl;
-    cout << "exit:  type q" << endl << endl;
-    cout << "Allowed options:" << endl
-         << "   -h	                     produce help message" << endl
-         << "   -i arg                   image name. Use %0xd format for "
-            "multiple images."
-         << endl
-         << "   -t arg                   wait before next frame (ms) [default "
-            "= 0]"
-         << endl
-         << endl
-         << endl;
-    return false;
-  }
-
-  int i = 1;
-  while (i < argc) {
-    if (string(argv[i]) == "-i") {
-      args.image_name = string(argv[++i]);
-    }
-
-    if (std::string(argv[i]) == "-t") {
-      args.wait_t = atoi(argv[++i]);
-    } else
-      args.wait_t = 0;
-
-    ++i;
-  }
-
-  return true;
-}
-
-// TODO(Fabiola): rivedere questa cosa del parsing...
-
-// Driver code
 int main(int argc, char** argv) {
-  ArgumentList args;
-  /*if (!ParseInputs(args, argc, argv)) {
-    return 1;
-  }*/
-
-  runCannyEdgeDetector(args);
-
+  runCannyEdgeDetector();
   return 0;
 }

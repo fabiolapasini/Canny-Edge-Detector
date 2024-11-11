@@ -4,31 +4,29 @@
 #include <opencv2/imgproc/imgproc.hpp>
 
 // std:
-#include <math.h>
-#include <cmath>
+#include <Math.h>
+
 #include <fstream>
 #include <iostream>
 #include <string>
 
 #include "include/utils.h"
 
-using namespace cv;
+// using namespace cv;
 using namespace std;
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
 #endif
 
-void maxPooling(const Mat& image, int size, int stride, Mat& out) {
+void maxPooling(const cv::Mat& image, int size, int stride, cv::Mat& out) {
   int newSizeCols = floor(((image.cols + 2 * 0 - size) / stride) + 1);
   int newSizeRows = floor(((image.cols + 2 * 0 - size) / stride) + 1);
-
   cout << endl << "New Col:" << newSizeCols << endl;
   cout << "New Row:" << newSizeRows << endl;
 
   int max = 0;
-
-  out = Mat(Size(newSizeCols, newSizeRows), CV_8UC1, Scalar(0));
+  out = cv::Mat(cv::Size(newSizeCols, newSizeRows), CV_8UC1, cv::Scalar(0));
 
   for (int v = 0; v <= image.rows - size; v += stride) {
     for (int u = 0; u <= image.cols - size; u += stride) {
@@ -46,12 +44,11 @@ void maxPooling(const Mat& image, int size, int stride, Mat& out) {
   }
 }
 
-void averagePooling(const Mat& image, int size, int stride, Mat& out) {
+void averagePooling(const cv::Mat& image, int size, int stride, cv::Mat& out) {
   int newSizeCols = floor(((image.cols + 2 * 0 - size) / stride) + 1);
   int newSizeRows = floor(((image.cols + 2 * 0 - size) / stride) + 1);
 
-  out = Mat(Size(newSizeCols, newSizeRows), CV_8UC1, Scalar(0));
-
+  out = cv::Mat(cv::Size(newSizeCols, newSizeRows), CV_8UC1, cv::Scalar(0));
   float average = 0.0f;
 
   for (int v = 0; v <= image.rows - size; v += stride) {
@@ -69,11 +66,12 @@ void averagePooling(const Mat& image, int size, int stride, Mat& out) {
   }
 }
 
-void convFloat(const Mat& image, const Mat& kernel, Mat& out, int stride = 1) {
+void convFloat(const cv::Mat& image, const cv::Mat& kernel, cv::Mat& out,
+               int stride) {
   int newSizeCols = floor(((image.cols + 2 * 0 - kernel.cols) / stride) + 1);
   int newSizeRows = floor(((image.cols + 2 * 0 - kernel.rows) / stride) + 1);
 
-  out = Mat(Size(newSizeCols, newSizeRows), CV_32FC1, Scalar(0));
+  out = cv::Mat(cv::Size(newSizeCols, newSizeRows), CV_32FC1, cv::Scalar(0));
 
   int offsetR = floor(kernel.rows) / 2;
   int offsetC = floor(kernel.cols) / 2;
@@ -99,8 +97,9 @@ void convFloat(const Mat& image, const Mat& kernel, Mat& out, int stride = 1) {
   }
 }
 
-void convInt(const Mat& image, const Mat& kernel, Mat& out, int stride = 1) {
-  Mat support;
+void convInt(const cv::Mat& image, const cv::Mat& kernel, cv::Mat& out,
+             int stride) {
+  cv::Mat support;
   convFloat(image, kernel, support, stride);
   out = cv::Mat(support.rows, support.cols, CV_8U);
 
@@ -121,8 +120,8 @@ void convInt(const Mat& image, const Mat& kernel, Mat& out, int stride = 1) {
   }
 }
 
-void gaussianKernel(float sigma, int radius, Mat& kernel) {
-  kernel = Mat(1, 2 * radius + 1, CV_32F);
+void gaussianKernel(float sigma, int radius, cv::Mat& kernel) {
+  kernel = cv::Mat(1, 2 * radius + 1, CV_32F);
   float* fker = (float*)kernel.data;
   float g;
   float sum = 0;
@@ -139,13 +138,13 @@ void gaussianKernel(float sigma, int radius, Mat& kernel) {
   }
 }
 
-void sobel(const Mat& image, Mat& magnitude, Mat& orientation) {
-  Mat Gx, Gy;
-  magnitude = Mat(Size(image.cols, image.rows), CV_32F);
-  orientation = Mat(Size(image.cols, image.rows), CV_32F);
+void sobel(const cv::Mat& image, cv::Mat& magnitude, cv::Mat& orientation) {
+  cv::Mat Gx, Gy;
+  magnitude = cv::Mat(cv::Size(image.cols, image.rows), CV_32F);
+  orientation = cv::Mat(cv::Size(image.cols, image.rows), CV_32F);
 
   float vet1[9] = {1.0f, 0.0f, -1.0f, 2.0f, 0.0f, -2.0f, 1.0f, 0.0f, -1.0f};
-  Mat Y = Mat(3, 3, CV_32F, vet1);
+  cv::Mat Y = cv::Mat(3, 3, CV_32F, vet1);
 
   // eseguo la convoluzione tra l'immagine e X (Y) e salvo il risulato in Gx
   // (Gy)
@@ -159,7 +158,6 @@ void sobel(const Mat& image, Mat& magnitude, Mat& orientation) {
 
   float max = 0;
   float min = 0;
-
   float max1 = 0;
   float min1 = 0;
 
@@ -176,17 +174,13 @@ void sobel(const Mat& image, Mat& magnitude, Mat& orientation) {
       pixelY = elemY[u + v * Gy.cols];
 
       mag = sqrtf(powf(pixelX, 2) + powf(pixelY, 2));
-
       if (mag >= max1) max1 = mag;
       if (mag <= min1) min1 = mag;
-
       magnitude.at<float>(v, u) = mag;
 
       ori = atan2f(pixelY, pixelX);
-
       if (ori >= max) max = ori;
       if (ori <= min) min = ori;
-
       orientation.at<float>(v, u) = ori;
     }
   }
@@ -197,7 +191,7 @@ void sobel(const Mat& image, Mat& magnitude, Mat& orientation) {
           2 * M_PI * (orientation.at<float>(v, u) - min) / (max - min);
     }
   }
-  
+
   for (int v = 0; v < magnitude.rows; v++) {
     for (int u = 0; u < magnitude.cols; u++) {
       magnitude.at<float>(v, u) =
@@ -207,20 +201,20 @@ void sobel(const Mat& image, Mat& magnitude, Mat& orientation) {
 }
 
 float bilinear(const cv::Mat& image, float r, float c) {
-  float bilinearInterpolation;
-
+  float bilinearInterpolation = 0.0f;
   int cF = (int)floor(c);
   int rF = (int)floor(r);
-
   float s = r - rF;
   float t = c - cF;
 
+  if (cF < 0 || rF < 0 || cF + 1 >= image.cols || rF + 1 >= image.rows) {
+    return 0.0f;
+  }
   if (image.type() == CV_8UC1) {
     float f00 = image.data[cF + rF * image.cols];
     float f10 = image.data[cF + (rF + 1) * image.cols];
     float f01 = image.data[(cF + 1) + rF * image.cols];
     float f11 = image.data[(cF + 1) + (rF + 1) * image.cols];
-
     bilinearInterpolation = ((1 - t) * (1 - s) * f00 + s * (1 - t) * f10 +
                              (1 - s) * t * f01 + s * t * f11);
   } else if (image.type() == CV_32F) {
@@ -228,17 +222,15 @@ float bilinear(const cv::Mat& image, float r, float c) {
     float f10 = image.at<float>(rF, cF + 1);
     float f01 = image.at<float>(rF + 1, cF);
     float f11 = image.at<float>(rF + 1, cF + 1);
-
     bilinearInterpolation = (1 - t) * (1 - s) * f00 + s * (1 - t) * f10 +
                             (1 - s) * t * f01 + s * t * f11;
   }
-
   return bilinearInterpolation;
 }
 
-int findPeaks(const Mat& magnitude, const Mat& orientation, Mat& out,
-              float th0) {
-  out = Mat(Size(magnitude.cols, magnitude.rows), CV_32F);
+int findPeaks(const cv::Mat& magnitude, const cv::Mat& orientation,
+              cv::Mat& out, float th0) {
+  out = cv::Mat(cv::Size(magnitude.cols, magnitude.rows), CV_32F);
   float angle, pixel, e1x, e1y, e2x, e2y, e1, e2;
 
   for (int r = 0; r < magnitude.rows; r++) {
@@ -264,10 +256,9 @@ int findPeaks(const Mat& magnitude, const Mat& orientation, Mat& out,
   return 0;
 }
 
-int doubleTh(const Mat& magnitude, Mat& out, float th1, float th2) {
-  out = Mat(Size(magnitude.cols, magnitude.rows), CV_8UC1);
+int doubleTh(const cv::Mat& magnitude, cv::Mat& out, float th1, float th2) {
   float val;
-
+  out = cv::Mat(cv::Size(magnitude.cols, magnitude.rows), CV_8UC1);
   for (int v = 0; v < magnitude.rows; v++) {
     for (int u = 0; u < magnitude.cols; u++) {
       val = magnitude.at<float>(v, u);
@@ -284,164 +275,148 @@ int doubleTh(const Mat& magnitude, Mat& out, float th1, float th2) {
   return 0;
 }
 
-int canny(const Mat& image, Mat& out, float th0, float th1, float th2) {
-  Mat magnitude, orientation, support;
-
+int canny(const cv::Mat& image, cv::Mat& out, float th0, float th1, float th2) {
+  cv::Mat magnitude, orientation, support;
   sobel(image, magnitude, orientation);
   findPeaks(magnitude, orientation, support, th0);
   doubleTh(support, out, th1, th2);
-
   return 0;
 }
 
-int runCannyEdgeDetector(ArgumentList args) {
+int runCannyEdgeDetector() {
   int frame_number = 0;
   char frame_name[256];
   bool exit_loop = false;
 
-  // // TODO(Fabiola): rivedere questa cosa del parsing...
-  //cout << "Simple program." << endl;
-
-  while (!exit_loop) {
-  //  // generating file name
-  //  // multi frame case
-  //  if (args.image_name.find('%') != std::string::npos)
-  //    sprintf(frame_name, (const char*)(args.image_name.c_str()), frame_number);
-  //  else  // single frame case
-  //    sprintf(frame_name, "%s", args.image_name.c_str());
-
-  //  // opening file
-  //  // std::cout<<"Opening "<<frame_name<<std::endl;
-
-    Mat image = imread("Lenna.png", CV_8UC1);
-
-    if (image.empty()) {
-      std::cout << "Unable to open " << frame_name << std::endl;
-      return 1;
-    }
-
-    // display image
-    // namedWindow("image", cv::WINDOW_NORMAL);
-    // imshow("image", image);
-
-    //////////////////////////////////////////////////////////////////////////////
-
-    [[maybe_unused]] int size = 3;
-    [[maybe_unused]] int stride = 2;
-    [[maybe_unused]] int sigma = 5;
-    [[maybe_unused]] int radius = 10;
-
-    [[maybe_unused]] float th0 = 0.15f;
-    [[maybe_unused]] float th1 = 0.3f;
-    [[maybe_unused]] float th2 = 0.2f;
-
-    float vet[9] = {0.0f, -1.0f, 0.0f, -1.0f, 5.0f, -1.0f, 0.0f, -1.0f, 0.0f};
-    Mat kernel = Mat(3, 3, CV_32F, vet);
-
-    float vet3[3] = {0.0f, 1.0f, 0.0f};
-    Mat kernel1D = Mat(1, 3, CV_32F, vet3);
-
-    ///////////// CODICE PER PROVARE LE VARIE FUNZIONI SINGOLARMENTE
-    ///////////////
-
-    // 1) MAX POOLLING
-    /*Mat first(Size(image.cols, image.rows), CV_8UC1, Scalar(0));
-    maxPooling(image, size, stride, first);
-    namedWindow("Max Polling");
-    imshow("Max Polling", first);*/
-
-    // 2) AVERAGE POOLLING
-    /*Mat second(Size(image.cols, image.rows), CV_8UC1, Scalar(0));
-    averagePooling(image, size, stride, second);
-    namedWindow("Everage Polling");
-    imshow("Everage Polling", second);*/
-
-    // 3) FLOAT CONVOLUTION
-    /*Mat third;
-    convFloat(image, kernel, third);
-    namedWindow("Float convolution");
-    imshow("Float convolution", third);*/
-
-    // 4) INT CONVOLUTION
-    /*Mat fourth;
-    convInt(image, kernel, fourth);
-    namedWindow("Float convolution");
-    imshow("Float convolution", fourth);*/
-
-    // 5) GAUSSIAN KERNEL
-    /*Mat fifth;
-    gaussianKernel(sigma, radius, kernel1D);
-    convInt(image, kernel1D, fifth, 1);
-    namedWindow("Orizontal gaussian Kernel");
-    imshow("Orizontal gaussian Kernel", fifth);*/
-
-    // 6) VARIUS FILTERS (decommentare il 5))
-    /*Mat sixtB;
-    convInt(image, kernel1D.t(), sixtB, 1);
-    namedWindow("Vertical gaussian Kernel");
-    imshow("Vertical gaussian Kernel", sixtB);
-
-    Mat sixt;
-    convInt(fifth, kernel1D.t(), sixt, 1);
-    namedWindow("Bidimensional gaussian Kernel");
-    imshow("Bidimensional gaussian Kernel", sixt);*/
-
-    // 7) MAGNITUDE & ORIENTATION
-    Mat magnitude, orientation, Gx, Gy;
-
-    sobel(image, magnitude, orientation);
-
-    namedWindow("Magnitude");
-    imshow("Magnitude", magnitude);
-
-    Mat adjMap;
-    convertScaleAbs(orientation, adjMap, 255 / (2 * M_PI));
-    Mat falseColorsMap;
-    applyColorMap(adjMap, falseColorsMap, COLORMAP_AUTUMN);
-    namedWindow("Orientation");
-    imshow("Orientation", falseColorsMap);
-
-    // 8) BILINEAR INTERPOLATION
-    /*float r = 27.8f;
-    float c = 11.4f;
-    float eight = bilinear(image, r, c);
-    cout<<"Bilinear interpolation between: " << r <<  " and " << c << " = " <<
-    eight << endl;*/
-
-    // 9) FIND PEAKS
-    Mat ninth(Size(image.cols, image.rows), CV_32F);
-    findPeaks(magnitude, orientation, ninth, th0);
-
-    namedWindow("Non maxima suppression");
-    imshow("Non maxima suppression", ninth);
-
-    // 10) HISTERESIS THRESHOLD
-    /*Mat tenth(Size(image.cols, image.rows), CV_8U);
-    doubleTh(magnitude, tenth, th1, th2);
-
-    namedWindow("Histeresis");
-    imshow("Histeresis", tenth);*/
-
-    // 11) CANNY
-    // //////////////////////////////////////////////////////////////////
-
-    Mat eleventh(Size(image.cols, image.rows), CV_8UC1);
-    canny(image, eleventh, th0, th1, th2);
-
-    namedWindow("Canny");
-    imshow("Canny", eleventh);
-
-    //////////////////////////////////////////////////////////////////////////////
-
-    // wait for key or timeout
-    unsigned char key = cv::waitKey(args.wait_t);
-    std::cout << "key " << int(key) << std::endl;
-
-    // here you can implement some looping logic using key value:
-    if (key == 'q') exit_loop = true;
-
-    frame_number++;
+  cv::Mat image = cv::imread("Lenna.png", CV_8UC1);
+  if (image.empty()) {
+    std::cout << "Unable to open " << frame_name << std::endl;
+    return 1;
   }
+
+  cv::namedWindow("Lenna", cv::WINDOW_NORMAL);
+  cv::imshow("Lenna", image);
+  cv::waitKey(5000);
+  cv::destroyWindow("Lenna");
+
+  int size = 3;
+  int stride = 2;
+  int sigma = 5;
+  int radius = 10;
+
+  float th0 = 0.15f;
+  float th1 = 0.3f;
+  float th2 = 0.2f;
+
+  float vet[9] = {0.0f, -1.0f, 0.0f, -1.0f, 5.0f, -1.0f, 0.0f, -1.0f, 0.0f};
+  cv::Mat kernel = cv::Mat(3, 3, CV_32F, vet);
+
+  float vet3[3] = {0.0f, 1.0f, 0.0f};
+  cv::Mat kernel1D = cv::Mat(1, 3, CV_32F, vet3);
+
+  // 1) MAX POOLLING
+  cv::Mat first(cv::Size(image.cols, image.rows), CV_8UC1, cv::Scalar(0));
+  maxPooling(image, size, stride, first);
+  cv::namedWindow("Max Polling");
+  cv::imshow("Max Polling", first);
+  cv::waitKey(5000);
+  cv::destroyWindow("Max Polling");
+
+  // 2) AVERAGE POOLLING
+  cv::Mat second(cv::Size(image.cols, image.rows), CV_8UC1, cv::Scalar(0));
+  averagePooling(image, size, stride, second);
+  cv::namedWindow("Everage Polling");
+  cv::imshow("Everage Polling", second);
+  cv::waitKey(5000);
+  cv::destroyWindow("Everage Polling");
+
+  // 3) FLOAT CONVOLUTION
+  cv::Mat third;
+  convFloat(image, kernel, third);
+  cv::namedWindow("Float convolution");
+  cv::imshow("Float convolution", third);
+  cv::waitKey(5000);
+  cv::destroyWindow("Float convolution");
+
+  // 4) INT CONVOLUTION
+  cv::Mat fourth;
+  convInt(image, kernel, fourth);
+  cv::namedWindow("Int convolution");
+  cv::imshow("Int convolution", fourth);
+  cv::waitKey(5000);
+  cv::destroyWindow("Int convolution");
+
+  // 5) GAUSSIAN KERNEL
+  cv::Mat fifth;
+  gaussianKernel(sigma, radius, kernel1D);
+  convInt(image, kernel1D, fifth, 1);
+  cv::namedWindow("Orizontal gaussian Kernel");
+  cv::imshow("Orizontal gaussian Kernel", fifth);
+  cv::waitKey(5000);
+  cv::destroyWindow("Orizontal gaussian Kernel");
+
+  // 6) VARIUS FILTERS (need number 5))
+  cv::Mat sixtB;
+  convInt(image, kernel1D.t(), sixtB, 1);
+  cv::namedWindow("Vertical gaussian Kernel");
+  cv::imshow("Vertical gaussian Kernel", sixtB);
+  cv::waitKey(5000);
+  cv::destroyWindow("Vertical gaussian Kernel");
+
+  cv::Mat sixt;
+  convInt(fifth, kernel1D.t(), sixt, 1);
+  cv::namedWindow("Bidimensional gaussian Kernel");
+  cv::imshow("Bidimensional gaussian Kernel", sixt);
+  cv::waitKey(5000);
+  cv::destroyWindow("Bidimensional gaussian Kernel");
+
+  // 7) MAGNITUDE & ORIENTATION
+  cv::Mat magnitude, orientation, Gx, Gy;
+  sobel(image, magnitude, orientation);
+  cv::namedWindow("Magnitude");
+  cv::imshow("Magnitude", magnitude);
+  cv::waitKey(5000);
+  cv::destroyWindow("Magnitude");
+
+  cv::Mat adjMap;
+  convertScaleAbs(orientation, adjMap, 255 / (2 * M_PI));
+  cv::Mat falseColorsMap;
+  applyColorMap(adjMap, falseColorsMap, cv::COLORMAP_AUTUMN);
+  cv::namedWindow("Orientation");
+  cv::imshow("Orientation", falseColorsMap);
+  cv::waitKey(5000);
+  cv::destroyWindow("Orientation");
+
+  // 8) BILINEAR INTERPOLATION
+  float r = 27.8f;
+  float c = 11.4f;
+  float eight = bilinear(image, r, c);
+  cout << "Bilinear interpolation between: " << r << " and " << c << " = "
+       << eight << endl;
+
+  // 9) FIND PEAKS
+  cv::Mat ninth(cv::Size(image.cols, image.rows), CV_32F);
+  findPeaks(magnitude, orientation, ninth, th0);
+  cv::namedWindow("Non maxima suppression");
+  cv::imshow("Non maxima suppression", ninth);
+  cv::waitKey(5000);
+  cv::destroyWindow("Non maxima suppression");
+
+  // 10) HISTERESIS THRESHOLD
+  cv::Mat tenth(cv::Size(image.cols, image.rows), CV_8U);
+  doubleTh(magnitude, tenth, th1, th2);
+  cv::namedWindow("Histeresis");
+  cv::imshow("Histeresis", tenth);
+  cv::waitKey(5000);
+  cv::destroyWindow("Histeresis");
+
+  // 11) CANNY
+  cv::Mat eleventh(cv::Size(image.cols, image.rows), CV_8UC1);
+  canny(image, eleventh, th0, th1, th2);
+  cv::namedWindow("Canny");
+  cv::imshow("Canny", eleventh);
+  unsigned char key = cv::waitKey(0);
+  if (key == 'q') cv::destroyWindow("Canny");
 
   return 0;
 }
