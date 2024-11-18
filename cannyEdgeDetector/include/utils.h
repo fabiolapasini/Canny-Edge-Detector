@@ -14,13 +14,14 @@ void convInt(const cv::Mat& image, const cv::Mat& kernel, cv::Mat& out,
 
 void gaussianKernel(float sigma, int radius, cv::Mat& kernel);
 
-void sobel(const cv::Mat& image, cv::Mat& magnitude, cv::Mat& orientation);
+void sobelFilter(const cv::Mat& image, cv::Mat& magnitude, cv::Mat& orientation);
 
-float bilinear(const cv::Mat& image, float r, float c);
+float bilinearInterpolation(const cv::Mat& image, float r, float c);
 
 int findPeaks(const cv::Mat& magnitude, const cv::Mat& orientation,
               cv::Mat& out, float th0);
 
 int doubleTh(const cv::Mat& magnitude, cv::Mat& out, float th1, float th2);
 
-int canny(const cv::Mat& image, cv::Mat& out, float th0, float th1, float th2);
+int cannyEdgeDetector(const cv::Mat& image, cv::Mat& out, float th0, float th1,
+                      float th2);

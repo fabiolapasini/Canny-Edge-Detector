@@ -5,25 +5,23 @@
 
 // std:
 #include <Math.h>
-
 #include <fstream>
 #include <iostream>
 #include <string>
 
 #include "include/utils.h"
 
-// using namespace cv;
-using namespace std;
+// using namespace std;
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
 #endif
 
 void maxPooling(const cv::Mat& image, int size, int stride, cv::Mat& out) {
-  int newSizeCols = floor(((image.cols + 2 * 0 - size) / stride) + 1);
-  int newSizeRows = floor(((image.cols + 2 * 0 - size) / stride) + 1);
-  cout << endl << "New Col:" << newSizeCols << endl;
-  cout << "New Row:" << newSizeRows << endl;
+  int newSizeCols = std::floor(((image.cols + 2 * 0 - size) / stride) + 1);
+  int newSizeRows = std::floor(((image.cols + 2 * 0 - size) / stride) + 1);
+  std::cout << std::endl << "New Col:" << newSizeCols << std::endl;
+  std::cout << "New Row:" << newSizeRows << std::endl;
 
   int max = 0;
   out = cv::Mat(cv::Size(newSizeCols, newSizeRows), CV_8UC1, cv::Scalar(0));
@@ -45,8 +43,8 @@ void maxPooling(const cv::Mat& image, int size, int stride, cv::Mat& out) {
 }
 
 void averagePooling(const cv::Mat& image, int size, int stride, cv::Mat& out) {
-  int newSizeCols = floor(((image.cols + 2 * 0 - size) / stride) + 1);
-  int newSizeRows = floor(((image.cols + 2 * 0 - size) / stride) + 1);
+  int newSizeCols = std::floor(((image.cols + 2 * 0 - size) / stride) + 1);
+  int newSizeRows = std::floor(((image.cols + 2 * 0 - size) / stride) + 1);
 
   out = cv::Mat(cv::Size(newSizeCols, newSizeRows), CV_8UC1, cv::Scalar(0));
   float average = 0.0f;
@@ -68,13 +66,15 @@ void averagePooling(const cv::Mat& image, int size, int stride, cv::Mat& out) {
 
 void convFloat(const cv::Mat& image, const cv::Mat& kernel, cv::Mat& out,
                int stride) {
-  int newSizeCols = floor(((image.cols + 2 * 0 - kernel.cols) / stride) + 1);
-  int newSizeRows = floor(((image.cols + 2 * 0 - kernel.rows) / stride) + 1);
+  int newSizeCols =
+      std::floor(((image.cols + 2 * 0 - kernel.cols) / stride) + 1);
+  int newSizeRows =
+      std::floor(((image.cols + 2 * 0 - kernel.rows) / stride) + 1);
 
   out = cv::Mat(cv::Size(newSizeCols, newSizeRows), CV_32FC1, cv::Scalar(0));
 
-  int offsetR = floor(kernel.rows) / 2;
-  int offsetC = floor(kernel.cols) / 2;
+  int offsetR = std::floor(kernel.rows) / 2;
+  int offsetC = std::floor(kernel.cols) / 2;
   int pixelIm;
   float pixelElem;
   float sum = 0.0f;
@@ -138,7 +138,7 @@ void gaussianKernel(float sigma, int radius, cv::Mat& kernel) {
   }
 }
 
-void sobel(const cv::Mat& image, cv::Mat& magnitude, cv::Mat& orientation) {
+void sobelFilter(const cv::Mat& image, cv::Mat& magnitude, cv::Mat& orientation) {
   cv::Mat Gx, Gy;
   magnitude = cv::Mat(cv::Size(image.cols, image.rows), CV_32F);
   orientation = cv::Mat(cv::Size(image.cols, image.rows), CV_32F);
@@ -146,13 +146,11 @@ void sobel(const cv::Mat& image, cv::Mat& magnitude, cv::Mat& orientation) {
   float vet1[9] = {1.0f, 0.0f, -1.0f, 2.0f, 0.0f, -2.0f, 1.0f, 0.0f, -1.0f};
   cv::Mat Y = cv::Mat(3, 3, CV_32F, vet1);
 
-  // eseguo la convoluzione tra l'immagine e X (Y) e salvo il risulato in Gx
-  // (Gy)
+  // perform convolution btw img and X (Y), then save the result in Gx (Gy)
   convFloat(image, Y.t(), Gx, 1);
   convFloat(image, Y, Gy, 1);
 
-  // scorro elemento per elemento di Gx e Gy e caclolo il valore assoluto che
-  // poi salvo in magnitude
+  // iterate throught elem per elem, get the absolute value and save it in the magnitude
   float* elemX = (float*)Gx.data;
   float* elemY = (float*)Gy.data;
 
@@ -200,7 +198,7 @@ void sobel(const cv::Mat& image, cv::Mat& magnitude, cv::Mat& orientation) {
   }
 }
 
-float bilinear(const cv::Mat& image, float r, float c) {
+float bilinearInterpolation(const cv::Mat& image, float r, float c) {
   float bilinearInterpolation = 0.0f;
   int cF = (int)floor(c);
   int rF = (int)floor(r);
@@ -243,8 +241,8 @@ int findPeaks(const cv::Mat& magnitude, const cv::Mat& orientation,
       e2x = c - 1 * cosf(angle);
       e2y = r - 1 * sinf(angle);
 
-      e1 = bilinear(magnitude, e1y, e1x);
-      e2 = bilinear(magnitude, e2y, e2x);
+      e1 = bilinearInterpolation(magnitude, e1y, e1x);
+      e2 = bilinearInterpolation(magnitude, e2y, e2x);
 
       if (pixel >= e1 && pixel >= e2 && pixel >= th0) {
         out.at<float>(r, c) = pixel;
@@ -275,9 +273,9 @@ int doubleTh(const cv::Mat& magnitude, cv::Mat& out, float th1, float th2) {
   return 0;
 }
 
-int canny(const cv::Mat& image, cv::Mat& out, float th0, float th1, float th2) {
+int cannyEdgeDetector(const cv::Mat& image, cv::Mat& out, float th0, float th1, float th2) {
   cv::Mat magnitude, orientation, support;
-  sobel(image, magnitude, orientation);
+  sobelFilter(image, magnitude, orientation);
   findPeaks(magnitude, orientation, support, th0);
   doubleTh(support, out, th1, th2);
   return 0;
@@ -372,7 +370,7 @@ int runCannyEdgeDetector() {
 
   // 7) MAGNITUDE & ORIENTATION
   cv::Mat magnitude, orientation, Gx, Gy;
-  sobel(image, magnitude, orientation);
+  sobelFilter(image, magnitude, orientation);
   cv::namedWindow("Magnitude");
   cv::imshow("Magnitude", magnitude);
   cv::waitKey(5000);
@@ -390,9 +388,9 @@ int runCannyEdgeDetector() {
   // 8) BILINEAR INTERPOLATION
   float r = 27.8f;
   float c = 11.4f;
-  float eight = bilinear(image, r, c);
-  cout << "Bilinear interpolation between: " << r << " and " << c << " = "
-       << eight << endl;
+  float eight = bilinearInterpolation(image, r, c);
+  std::cout << "Bilinear interpolation between: " << r << " and " << c << " = "
+       << eight << std::endl;
 
   // 9) FIND PEAKS
   cv::Mat ninth(cv::Size(image.cols, image.rows), CV_32F);
@@ -412,7 +410,7 @@ int runCannyEdgeDetector() {
 
   // 11) CANNY
   cv::Mat eleventh(cv::Size(image.cols, image.rows), CV_8UC1);
-  canny(image, eleventh, th0, th1, th2);
+  cannyEdgeDetector(image, eleventh, th0, th1, th2);
   cv::namedWindow("Canny");
   cv::imshow("Canny", eleventh);
   unsigned char key = cv::waitKey(0);
