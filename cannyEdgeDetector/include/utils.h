@@ -3,7 +3,8 @@
 #include <filesystem>
 #include "Image.h"
 
-namespace Canny {
+namespace Canny 
+{
 	void maxPooling(const cv::Mat& image, int size, int stride, cv::Mat& out);
 
 	void averagePooling(const cv::Mat& image, int size, int stride, cv::Mat& out);
