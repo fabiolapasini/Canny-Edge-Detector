@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
+
+  <Type Name="Graphics::Image&lt;unsigned char&gt;">
+    <UIVisualizer ServiceId="{A452AFEA-3DF6-46BB-9177-C0B08F318025}" Id="1"/>
+  </Type>
+
+  <Type Name="Graphics::Image&lt;unsigned char&gt;">
+    <DisplayString>{{UINT8, {m_channels} x {m_width} x {m_height}}}</DisplayString>
+    <Expand>
+      <Synthetic Name="[type]"><DisplayString>UINT8</DisplayString></Synthetic>
+      <Item Name="[width]">m_width</Item>
+      <Item Name="[height]">m_height</Item>
+      <Item Name="[channels]">m_channels</Item>
+      <Item Name="[stride]">m_width * m_channels</Item>
+      <Item Name="[data]">m_data._Mypair._Myval2</Item>
+    </Expand>
+  </Type>
+
+  <Type Name="Graphics::Image&lt;float&gt;">
+    <UIVisualizer ServiceId="{A452AFEA-3DF6-46BB-9177-C0B08F318025}" Id="1"/>
+  </Type>
+
+  <Type Name="Graphics::Image&lt;float&gt;">
+    <DisplayString>{{FLOAT32, {m_channels} x {m_width} x {m_height}}}</DisplayString>
+    <Expand>
+      <Synthetic Name="[type]"><DisplayString>FLOAT32</DisplayString></Synthetic>
+      <Item Name="[width]">m_width</Item>
+      <Item Name="[height]">m_height</Item>
+      <Item Name="[channels]">m_channels</Item>
+      <Item Name="[stride]">m_width * m_channels * 4</Item>
+      <Item Name="[data]">m_data._Mypair._Myval2</Item>
+    </Expand>
+  </Type>
+
+</AutoVisualizer>
