@@ -18,108 +18,108 @@
 
 namespace Canny
 {
-	void maxPooling(const cv::Mat& image, int size, int stride, cv::Mat& out) {
-		// get the output dimension based on the stride and the original size
-		int newSizeCols = std::floor(((image.cols + 2 * 0 - size) / stride) + 1);
-		int newSizeRows = std::floor(((image.cols + 2 * 0 - size) / stride) + 1);
-		std::cout << std::endl << "New Col:" << newSizeCols << std::endl;
-		std::cout << "New Row:" << newSizeRows << std::endl;
+	Graphics::Image<unsigned char> maxPooling(
+		const Graphics::Image<unsigned char>& image, int size, int stride)
+	{
+		int newSizeCols = std::floor(((image.width() + 2 * 0 - size) / stride) + 1);
+		int newSizeRows = std::floor(((image.height() + 2 * 0 - size) / stride) + 1);
+
+		Graphics::Image<unsigned char> out(newSizeCols, newSizeRows, 1);
+		std::fill(out.data(), out.data() + out.totalElements(), 0);
 
 		int max = 0;
-		out = cv::Mat(cv::Size(newSizeCols, newSizeRows), CV_8UC1, cv::Scalar(0));
-
-		for (int v = 0; v <= image.rows - size; v += stride) {
-			for (int u = 0; u <= image.cols - size; u += stride) {
+		for (int v = 0; v <= image.height() - size; v += stride) {
+			for (int u = 0; u <= image.width() - size; u += stride) {
 				max = 0;
-
 				for (int i = 0; i < size; i++) {
 					for (int j = 0; j < size; j++) {
-						if (image.data[(u + j + (v + i) * image.cols)] > max) {
-							max = image.data[(u + j + (v + i) * image.cols)];
+						if (image(u + j, v + i) > max) {
+							max = image(u + j, v + i);
 						}
 					}
 				}
-				out.data[((u / stride) + (v / stride) * out.cols)] = max;
+				out(u / stride, v / stride) = static_cast<unsigned char>(max);
 			}
 		}
+		return out;
 	}
 
-	void averagePooling(const cv::Mat& image, int size, int stride, cv::Mat& out) {
-		int newSizeCols = std::floor(((image.cols + 2 * 0 - size) / stride) + 1);
-		int newSizeRows = std::floor(((image.cols + 2 * 0 - size) / stride) + 1);
+	Graphics::Image<unsigned char> averagePooling(const Graphics::Image<unsigned char>& image, int size, int stride)
+	{
+		int newSizeCols = std::floor(((image.width() + 2 * 0 - size) / stride) + 1);
+		int newSizeRows = std::floor(((image.height() + 2 * 0 - size) / stride) + 1);
 
-		out = cv::Mat(cv::Size(newSizeCols, newSizeRows), CV_8UC1, cv::Scalar(0));
+		Graphics::Image<unsigned char> out(newSizeCols, newSizeRows, 1);
+		std::fill(out.data(), out.data() + out.totalElements(), 0);
+
 		float average = 0.0f;
-
-		for (int v = 0; v <= image.rows - size; v += stride) {
-			for (int u = 0; u <= image.cols - size; u += stride) {
+		for (int v = 0; v <= image.height() - size; v += stride) {
+			for (int u = 0; u <= image.width() - size; u += stride) {
 				average = 0.0f;
-
 				for (int i = 0; i < size; i++) {
 					for (int j = 0; j < size; j++) {
-						average += image.data[(u + j + (v + i) * image.cols)];
+						average += image(u + j, v + i);
 					}
 				}
-				average /= pow(size, 2);
-				out.data[((u / stride) + (v / stride) * out.cols)] = average;
+				average /= (size * size);
+				out(u / stride, v / stride) = static_cast<unsigned char>(average);
 			}
 		}
+		return out;
 	}
 
-	void convFloat(const cv::Mat& image, const cv::Mat& kernel, cv::Mat& out,
-		int stride) {
-		int newSizeCols =
-			std::floor(((image.cols + 2 * 0 - kernel.cols) / stride) + 1);
-		int newSizeRows =
-			std::floor(((image.cols + 2 * 0 - kernel.rows) / stride) + 1);
+	Graphics::Image<float> convFloat(const Graphics::Image<unsigned char>& image,
+		const Graphics::Image<float>& kernel, int stride)
+	{
+		int newSizeCols = std::floor(((image.width() + 2 * 0 - kernel.width()) / stride) + 1);
+		int newSizeRows = std::floor(((image.height() + 2 * 0 - kernel.height()) / stride) + 1);
 
-		out = cv::Mat(cv::Size(newSizeCols, newSizeRows), CV_32FC1, cv::Scalar(0));
+		Graphics::Image<float> out(newSizeCols, newSizeRows, 1);
+		std::fill(out.data(), out.data() + out.totalElements(), 0);
 
-		int offsetR = std::floor(kernel.rows) / 2;
-		int offsetC = std::floor(kernel.cols) / 2;
+		int offsetC = std::floor(kernel.width()) / 2;
+		int offsetR = std::floor(kernel.height()) / 2;
 		int pixelIm;
 		float pixelElem;
 		float sum = 0.0f;
-		float* fker = (float*)kernel.data;
-		float* fim = (float*)out.data;
+		const float* fker = kernel.data();
 
-		for (int v = 0; v < out.rows; v++) {
-			for (int u = 0; u < out.cols; u++) {
+		for (int v = 0; v < out.height(); v++) {
+			for (int u = 0; u < out.width(); u++) {
 				sum = 0.0f;
 				for (int i = -offsetR; i <= offsetR; i++) {
 					for (int j = -offsetC; j <= offsetC; j++) {
-						pixelIm =
-							image.data[((u * stride) + j + ((v * stride) + i) * image.cols)];
-						pixelElem = fker[(offsetC + j + (offsetR + i) * kernel.cols)];
+						pixelIm = image((u * stride) + j, ((v * stride) + i));
+						pixelElem = kernel(offsetC + j, offsetR + i);
 						sum += (pixelElem * pixelIm);
 					}
 				}
-				fim[u + v * out.cols] = sum / 255.0f;
+				out(u,v) = sum / 255.0f;
 			}
 		}
+		return out;
 	}
 
-	void convInt(const cv::Mat& image, const cv::Mat& kernel, cv::Mat& out,
-		int stride) {
-		cv::Mat support;
-		convFloat(image, kernel, support, stride);
-		out = cv::Mat(support.rows, support.cols, CV_8U);
 
-		float* fim = (float*)support.data;
+	Graphics::Image<unsigned char> convInt(const Graphics::Image<unsigned char>& image,
+		const Graphics::Image<float>& kernel, int stride)
+	{
+		Graphics::Image<float> support = convFloat(image, kernel, stride);
+		Graphics::Image<unsigned char> out(support.width(), support.height(), 1);
+		std::fill(out.data(), out.data() + out.totalElements(), 0);
+
 		float floatVal;
 		int intVal;
-
-		for (int v = 0; v < out.rows; v++) {
-			for (int u = 0; u < out.cols; u++) {
-				floatVal = fim[u + v * out.cols];
+		for (int v = 0; v < out.height(); v++) {
+			for (int u = 0; u < out.width(); u++) {
+				floatVal = support(u, v);
 				intVal = floatVal * 255;
-
 				if (intVal > 255) intVal = 255;
 				if (intVal < 0) intVal = 0;
-
-				out.data[u + v * out.cols] = intVal;
+				out(u, v) = static_cast<unsigned char>(intVal);
 			}
 		}
+		return out;
 	}
 
 	void gaussianKernel(float sigma, int radius, cv::Mat& kernel) {
@@ -149,8 +149,8 @@ namespace Canny
 		cv::Mat Y = cv::Mat(3, 3, CV_32F, vet1);
 
 		// perform convolution btw img and X (Y), then save the result in Gx (Gy)
-		convFloat(image, Y.t(), Gx, 1);
-		convFloat(image, Y, Gy, 1);
+		// convFloat(image, Y.t(), Gx, 1);
+		// convFloat(image, Y, Gy, 1);
 
 		// iterate throught elem per elem, get the absolute value and save it in the magnitude
 		float* elemX = (float*)Gx.data;

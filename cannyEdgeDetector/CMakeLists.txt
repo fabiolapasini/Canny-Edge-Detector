@@ -18,7 +18,7 @@ include_directories(
 add_executable(CannyEdgeDetector  
     HelloVisionWorld.cpp
     src/stb_image_impl.cpp
-)
+ "include/HelloVisionWorld.h")
 
 # Link OpenCV
 if(OpenCV_FOUND)

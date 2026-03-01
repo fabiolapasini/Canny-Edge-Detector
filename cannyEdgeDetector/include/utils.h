@@ -3,17 +3,17 @@
 #include <filesystem>
 #include "Image.h"
 
-namespace Canny 
+namespace Canny
 {
-	void maxPooling(const cv::Mat& image, int size, int stride, cv::Mat& out);
+	Graphics::Image<unsigned char> maxPooling(const Graphics::Image<unsigned char>& image, int size, int stride);
 
-	void averagePooling(const cv::Mat& image, int size, int stride, cv::Mat& out);
+	Graphics::Image<unsigned char> averagePooling(const Graphics::Image<unsigned char>& image, int size, int stride);
 
-	void convFloat(const cv::Mat& image, const cv::Mat& kernel, cv::Mat& out,
-		int stride = 1);
+	Graphics::Image<float> convFloat(const Graphics::Image<unsigned char>& image, 
+		const Graphics::Image<float>& kernel, int stride = 1);
 
-	void convInt(const cv::Mat& image, const cv::Mat& kernel, cv::Mat& out,
-		int stride = 1);
+	Graphics::Image<unsigned char> convInt(const Graphics::Image<unsigned char>& image,
+		const Graphics::Image<float>& kernel, int stride = 1);
 
 	void gaussianKernel(float sigma, int radius, cv::Mat& kernel);
 
