@@ -129,6 +129,19 @@ class Image {
     }
     return destination;
   }
+
+  Image transpose() const {
+      Image out(m_height, m_width, m_channels);
+      for (int y = 0; y < m_height; y++) {
+          for (int x = 0; x < m_width; x++) {
+              for (int c = 0; c < m_channels; c++) {
+                  out(y, x, c) = (*this)(x, y, c);
+              }
+          }
+      }
+      return out;
+  }
+
 };
 
 }  // namespace Graphics

@@ -55,17 +55,13 @@ int runCannyEdgeDetector(Graphics::Image<unsigned char> img)
 	// 4) INT CONVOLUTION
 	auto fourth = Canny::convInt(img, kernel_3x3);
 
-	//// 5) GAUSSIAN KERNEL
-	//cv::Mat fifth;
-	//Canny::gaussianKernel(sigma, radius, kernel1D);
-	//Canny::convInt(image, kernel1D, fifth, 1);
+	// 5) GAUSSIAN KERNEL
+	Graphics::Image<float> kernel_gauss = Canny::gaussianKernel(sigma, radius);
+	Graphics::Image<unsigned char> fifth = Canny::convInt(img, kernel_gauss);
 
-	//// 6) VARIUS FILTERS
-	//cv::Mat sixtB;
-	//Canny::convInt(image, kernel1D.t(), sixtB, 1);
-
-	//cv::Mat sixt;
-	//Canny::convInt(fifth, kernel1D.t(), sixt, 1);
+	// 6) VARIOUS FILTERS
+	Graphics::Image<unsigned char> sixth_b = Canny::convInt(img, kernel_1x3.transpose());
+	Graphics::Image<unsigned char> sixth = Canny::convInt(fifth, kernel_1x3.transpose());
 
 	//// 7) MAGNITUDE & ORIENTATION
 	//cv::Mat magnitude, orientation, Gx, Gy;

@@ -122,23 +122,25 @@ namespace Canny
 		return out;
 	}
 
-	void gaussianKernel(float sigma, int radius, cv::Mat& kernel) {
-		kernel = cv::Mat(1, 2 * radius + 1, CV_32F);
-		float* fker = (float*)kernel.data;
+	Graphics::Image<float> gaussianKernel(float sigma, int radius)
+	{
+		int size = 2 * radius + 1;
+		Graphics::Image<float> kernel(size, 1, 1);
+		float sum = 0.0f;
 		float g;
-		float sum = 0;
 
-		for (int c = 0; c < kernel.cols; c++) {
-			g = (1 / (2 * M_PI * powf(sigma, 2))) *
-				exp(-powf(c, 2) / (2 * powf(sigma, 2)));
-			fker[c] = g;
+		for (int c = 0; c < size; c++) {
+			g = (1.0f / (2.0f * M_PI * powf(sigma, 2))) *
+				expf(-powf(c, 2) / (2.0f * powf(sigma, 2)));
+			kernel(c, 0) = g;
 			sum += g;
 		}
-
-		for (int c = 0; c < kernel.cols; c++) {
-			fker[c] /= sum;
+		for (int c = 0; c < size; c++) {
+			kernel(c, 0) /= sum;
 		}
+		return kernel;
 	}
+
 
 	void sobelFilter(const cv::Mat& image, cv::Mat& magnitude, cv::Mat& orientation) {
 		cv::Mat Gx, Gy;

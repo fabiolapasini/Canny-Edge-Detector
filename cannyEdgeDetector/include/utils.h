@@ -15,7 +15,7 @@ namespace Canny
 	Graphics::Image<unsigned char> convInt(const Graphics::Image<unsigned char>& image,
 		const Graphics::Image<float>& kernel, int stride = 1);
 
-	void gaussianKernel(float sigma, int radius, cv::Mat& kernel);
+	Graphics::Image<float> gaussianKernel(float sigma, int radius);
 
 	void sobelFilter(const cv::Mat& image, cv::Mat& magnitude,
 		cv::Mat& orientation);
