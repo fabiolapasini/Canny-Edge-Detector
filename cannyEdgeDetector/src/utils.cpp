@@ -142,151 +142,153 @@ namespace Canny
 	}
 
 
-	void sobelFilter(const cv::Mat& image, cv::Mat& magnitude, cv::Mat& orientation) {
-		cv::Mat Gx, Gy;
-		magnitude = cv::Mat(cv::Size(image.cols, image.rows), CV_32F);
-		orientation = cv::Mat(cv::Size(image.cols, image.rows), CV_32F);
+	void sobelFilter(const Graphics::Image<unsigned char>& image,
+		Graphics::Image<float>& magnitude, Graphics::Image<float>& orientation)
+	{
+		// Sobel Kernel
+		float vet1[] = { 1.0f, 0.0f, -1.0f, 2.0f, 0.0f, -2.0f, 1.0f, 0.0f, -1.0f };
+		Graphics::Image<float> Y(3, 3, 1);
+		std::copy(vet1, vet1 + 9, Y.data());
 
-		float vet1[9] = { 1.0f, 0.0f, -1.0f, 2.0f, 0.0f, -2.0f, 1.0f, 0.0f, -1.0f };
-		cv::Mat Y = cv::Mat(3, 3, CV_32F, vet1);
+		Graphics::Image<float> Gx = convFloat(image, Y.transpose());	// horizontal gradient
+		Graphics::Image<float> Gy = convFloat(image, Y);				// vertical gradient
 
-		// perform convolution btw img and X (Y), then save the result in Gx (Gy)
-		// convFloat(image, Y.t(), Gx, 1);
-		// convFloat(image, Y, Gy, 1);
+		magnitude = Graphics::Image<float>(Gx.width(), Gx.height(), 1);
+		orientation = Graphics::Image<float>(Gx.width(), Gx.height(), 1);
+		std::fill(magnitude.data(), magnitude.data() + magnitude.totalElements(), 0.0f);
+		std::fill(orientation.data(), orientation.data() + orientation.totalElements(), 0.0f);
 
-		// iterate throught elem per elem, get the absolute value and save it in the magnitude
-		float* elemX = (float*)Gx.data;
-		float* elemY = (float*)Gy.data;
+		float max_orientation = 0.0f, min_orientation = 0.0f;
+		float max_magnitude = 0.0f, min_magnitude = 0.0f;
+		float pixelX, pixelY, mag, ori;
 
-		float max = 0;
-		float min = 0;
-		float max1 = 0;
-		float min1 = 0;
+		for (int v = 0; v < Gx.height(); v++) {
+			for (int u = 0; u < Gx.width(); u++) {
+				pixelX = Gx(u, v);
+				pixelY = Gy(u, v);
 
-		float mag = 0.0f;
-		float ori = 0.0f;
-		float pixelX, pixelY;
-
-		for (int v = 0; v < Gx.rows; v++) {
-			mag = 0.0f;
-			ori = 0.0f;
-
-			for (int u = 0; u < Gx.cols; u++) {
-				pixelX = elemX[u + v * Gx.cols];
-				pixelY = elemY[u + v * Gy.cols];
-
+				// Magnitude of the gradient vector
 				mag = sqrtf(powf(pixelX, 2) + powf(pixelY, 2));
-				if (mag >= max1) max1 = mag;
-				if (mag <= min1) min1 = mag;
-				magnitude.at<float>(v, u) = mag;
+				if (mag >= max_magnitude) max_magnitude = mag;
+				if (mag <= min_magnitude) min_magnitude = mag;
+				magnitude(u, v) = mag;
 
+				// Direction of the gradient vector
 				ori = atan2f(pixelY, pixelX);
-				if (ori >= max) max = ori;
-				if (ori <= min) min = ori;
-				orientation.at<float>(v, u) = ori;
+				if (ori >= max_orientation) max_orientation = ori;
+				if (ori <= min_orientation) min_orientation = ori;
+				orientation(u, v) = ori;
 			}
 		}
 
-		for (int v = 0; v < orientation.rows; v++) {
-			for (int u = 0; u < orientation.cols; u++) {
-				orientation.at<float>(v, u) =
-					2 * M_PI * (orientation.at<float>(v, u) - min) / (max - min);
+		// Normalization
+		for (int v = 0; v < orientation.height(); v++) {
+			for (int u = 0; u < orientation.width(); u++) {
+				orientation(u, v) = 2.0f * M_PI * (orientation(u, v) - min_orientation) / (max_orientation - min_orientation);
 			}
 		}
-
-		for (int v = 0; v < magnitude.rows; v++) {
-			for (int u = 0; u < magnitude.cols; u++) {
-				magnitude.at<float>(v, u) =
-					1 * (magnitude.at<float>(v, u) - min1) / (max1 - min1);
+		for (int v = 0; v < magnitude.height(); v++) {
+			for (int u = 0; u < magnitude.width(); u++) {
+				magnitude(u, v) = (magnitude(u, v) - min_magnitude) / (max_magnitude - min_magnitude);
 			}
 		}
 	}
 
-	float bilinearInterpolation(const cv::Mat& image, float r, float c) {
-		float bilinearInterpolation = 0.0f;
-		int cF = (int)floor(c);
-		int rF = (int)floor(r);
-		float s = r - rF;
-		float t = c - cF;
-
-		if (cF < 0 || rF < 0 || cF + 1 >= image.cols || rF + 1 >= image.rows) {
-			return 0.0f;
-		}
-		if (image.type() == CV_8UC1) {
-			float f00 = image.data[cF + rF * image.cols];
-			float f10 = image.data[cF + (rF + 1) * image.cols];
-			float f01 = image.data[(cF + 1) + rF * image.cols];
-			float f11 = image.data[(cF + 1) + (rF + 1) * image.cols];
-			bilinearInterpolation = ((1 - t) * (1 - s) * f00 + s * (1 - t) * f10 +
-				(1 - s) * t * f01 + s * t * f11);
-		}
-		else if (image.type() == CV_32F) {
-			float f00 = image.at<float>(rF, cF);
-			float f10 = image.at<float>(rF, cF + 1);
-			float f01 = image.at<float>(rF + 1, cF);
-			float f11 = image.at<float>(rF + 1, cF + 1);
-			bilinearInterpolation = (1 - t) * (1 - s) * f00 + s * (1 - t) * f10 +
-				(1 - s) * t * f01 + s * t * f11;
-		}
-		return bilinearInterpolation;
-	}
-
-	int findPeaks(const cv::Mat& magnitude, const cv::Mat& orientation,
-		cv::Mat& out, float th0) {
-		out = cv::Mat(cv::Size(magnitude.cols, magnitude.rows), CV_32F);
+	Graphics::Image<unsigned char> findPeaks(const Graphics::Image<float>& magnitude,
+		const Graphics::Image<float>& orientation, float th0)
+	{
+		Graphics::Image<unsigned char> out(magnitude.width(), magnitude.height(), 1);
+		std::fill(out.data(), out.data() + out.totalElements(), 0);
 		float angle, pixel, e1x, e1y, e2x, e2y, e1, e2;
 
-		for (int r = 0; r < magnitude.rows; r++) {
-			for (int c = 0; c < magnitude.cols; c++) {
-				pixel = magnitude.at<float>(r, c);
-				angle = orientation.at<float>(r, c);
-
-				e1x = c + 1 * cosf(angle);
-				e1y = r + 1 * sinf(angle);
-				e2x = c - 1 * cosf(angle);
-				e2y = r - 1 * sinf(angle);
-
+		for (int r = 0; r < magnitude.height(); r++) {
+			for (int c = 0; c < magnitude.width(); c++) {
+				pixel = magnitude(c, r);
+				angle = orientation(c, r);
+				e1x = c + cosf(angle);
+				e1y = r + sinf(angle);
+				e2x = c - cosf(angle);
+				e2y = r - sinf(angle);
 				e1 = bilinearInterpolation(magnitude, e1y, e1x);
 				e2 = bilinearInterpolation(magnitude, e2y, e2x);
-
 				if (pixel >= e1 && pixel >= e2 && pixel >= th0) {
-					out.at<float>(r, c) = pixel;
+					out(c, r) = static_cast<unsigned char>(pixel * 255);
 				}
 				else {
-					out.at<float>(r, c) = 0;
+					out(c, r) = 0;
 				}
 			}
 		}
-		return 0;
+
+		return out;
 	}
 
-	int doubleTh(const cv::Mat& magnitude, cv::Mat& out, float th1, float th2) {
+	Graphics::Image<unsigned char> doubleTh(const Graphics::Image<unsigned char>& magnitude,
+		float th1, float th2)
+	{
+		Graphics::Image<unsigned char> out(magnitude.width(), magnitude.height(), 1);
+		std::fill(out.data(), out.data() + out.totalElements(), 0);
 		float val;
-		out = cv::Mat(cv::Size(magnitude.cols, magnitude.rows), CV_8UC1);
-		for (int v = 0; v < magnitude.rows; v++) {
-			for (int u = 0; u < magnitude.cols; u++) {
-				val = magnitude.at<float>(v, u);
-
+		for (int v = 0; v < magnitude.height(); v++) {
+			for (int u = 0; u < magnitude.width(); u++) {
+				val = static_cast<float>(magnitude(u, v)) / 255.0f;
 				if (val > th1) {
-					out.data[u + v * magnitude.cols] = 255.0f;
+					out(u, v) = 255;
 				}
-				else if (val <= th1 && val > th2) {
-					out.data[u + v * magnitude.cols] = 128.0f;
+				else if (val > th2) {
+					out(u, v) = 128;
 				}
-				else if (val <= th2) {
-					out.data[u + v * magnitude.cols] = 0.0f;
+				else {
+					out(u, v) = 0;
 				}
 			}
 		}
-		return 0;
+		return out;
 	}
 
-	int cannyEdgeDetector(const cv::Mat& image, cv::Mat& out, float th0, float th1, float th2) {
-		cv::Mat magnitude, orientation, support;
+	Graphics::Image<unsigned char> cannyEdgeDetector(const Graphics::Image<unsigned char>& image,
+		float th0, float th1, float th2)
+	{
+		Graphics::Image<float> magnitude, orientation;
 		sobelFilter(image, magnitude, orientation);
-		findPeaks(magnitude, orientation, support, th0);
-		doubleTh(support, out, th1, th2);
-		return 0;
+		auto support = findPeaks(magnitude, orientation, th0);
+		return doubleTh(support, th1, th2);
 	}
 
+	Graphics::Image<unsigned char> edgeLinking(const Graphics::Image<unsigned char>& image)
+	{
+		Graphics::Image<unsigned char> out = image.clone();
+
+		bool changed = true;
+		while (changed) 
+		{
+			changed = false;
+			for (int v = 1; v < image.height() - 1; v++) {
+				for (int u = 1; u < image.width() - 1; u++) {
+					if (out(u, v) == 128) {
+						bool nearStrong = false;
+						for (int dv = -1; dv <= 1 && !nearStrong; dv++) {
+							for (int du = -1; du <= 1 && !nearStrong; du++) {
+								if (out(u + du, v + dv) == 255) {
+									nearStrong = true;
+								}
+							}
+						}
+						if (nearStrong) {
+							out(u, v) = 255;
+							changed = true;
+						}
+					}
+				}
+			}
+		}
+
+		for (int v = 0; v < out.height(); v++) {
+			for (int u = 0; u < out.width(); u++) {
+				if (out(u, v) == 128) out(u, v) = 0;
+			}
+		}
+
+		return out;
+	}
 }

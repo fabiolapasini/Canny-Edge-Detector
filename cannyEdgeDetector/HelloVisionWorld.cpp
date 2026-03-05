@@ -63,39 +63,43 @@ int runCannyEdgeDetector(Graphics::Image<unsigned char> img)
 	Graphics::Image<unsigned char> sixth_b = Canny::convInt(img, kernel_1x3.transpose());
 	Graphics::Image<unsigned char> sixth = Canny::convInt(fifth, kernel_1x3.transpose());
 
-	//// 7) MAGNITUDE & ORIENTATION
-	//cv::Mat magnitude, orientation, Gx, Gy;
-	//Canny::sobelFilter(image, magnitude, orientation);
+	// 7) MAGNITUDE & ORIENTATION
+	Graphics::Image<float> magnitude, orientation;
+	Canny::sobelFilter(img, magnitude, orientation);
 
-	//cv::Mat adjMap;
-	//convertScaleAbs(orientation, adjMap, 255 / (2 * M_PI));
-	//cv::Mat falseColorsMap;
-	//applyColorMap(adjMap, falseColorsMap, cv::COLORMAP_AUTUMN);
+	cv::Mat adjMap(orientation.height(), orientation.width(), CV_32F, orientation.data());
+	// normalize [0, 2π] → [0, 255]
+	cv::Mat adjMap8;
+	adjMap.convertTo(adjMap8, CV_8U, 255.0 / (2 * M_PI));
+	cv::Mat falseColorsMap;
+	cv::applyColorMap(adjMap8, falseColorsMap, cv::COLORMAP_AUTUMN);
+	cv::imshow("Orientation", falseColorsMap);
+	cv::waitKey(5000);
+	cv::destroyWindow("Orientation");
 
 	//// 8) BILINEAR INTERPOLATION
-	//float r = 27.8f;
-	//float c = 11.4f;
-	//float eight = Canny::bilinearInterpolation(image, r, c);
+	float r = 27.8f;
+	float c = 11.4f;
+	float eight = Canny::bilinearInterpolation(img, r, c);
 	//std::cout << "Bilinear interpolation between: " << r << " and " << c << " = "
 	//          << eight << std::endl;
 
-	//// 9) FIND PEAKS
-	//cv::Mat ninth(cv::Size(image.cols, image.rows), CV_32F);
-	//Canny::findPeaks(magnitude, orientation, ninth, th0);
+	// 9) FIND PEAKS
+	auto ninth = Canny::findPeaks(magnitude, orientation, th0);
 
-	//// 10) HISTERESIS THRESHOLD
-	//cv::Mat tenth(cv::Size(image.cols, image.rows), CV_8U);
-	//Canny::doubleTh(magnitude, tenth, th1, th2);
+	// 10) DOUBLE THRESHOLD
+	auto tenth = Canny::doubleTh(ninth, th1, th2);
 
-	//// 11) CANNY
-	//cv::Mat eleventh(cv::Size(image.cols, image.rows), CV_8UC1);
-	//Canny::cannyEdgeDetector(image, eleventh, th0, th1, th2);
-	//cv::namedWindow("Canny");
-	//cv::imshow("Canny", eleventh);
-	//unsigned char key = cv::waitKey(0);
-	//if (key == 'q') cv::destroyWindow("Canny");
+	// 11) CANNY EDGE DETECTOR
+	auto eleventh = Canny::cannyEdgeDetector(img, th0, th1, th2);
 
-	//  // 12) EDGE LINKING
+	// 12) EDGE LINKING
+	auto twelfth = Canny::edgeLinking(tenth);
+	cv::Mat canny(twelfth.height(), twelfth.width(), CV_8UC1, twelfth.data());
+	cv::namedWindow("Canny");
+	cv::imshow("Canny", canny);
+	unsigned char key = cv::waitKey(0);
+	if (key == 'q') cv::destroyWindow("Canny");
 
 #ifdef _SAVE_IMG_
 	Canny::saveRAW(first, "MaxPooling.raw");
@@ -109,7 +113,8 @@ int runCannyEdgeDetector(Graphics::Image<unsigned char> img)
 	Canny::saveRAW(falseColorsMap, "Orientation.raw");
 	Canny::saveRAW(ninth, "NonMaxSuppression.raw");
 	Canny::saveRAW(tenth, "Hysteresis.raw");
-	Canny::saveRAW(eleventh, "Canny.raw");
+	Canny::saveRAW(eleventh, "Canny_Busy.raw");
+	Canny::saveRAW(twelfth, "Canny.raw");
 #endif
 }
 
